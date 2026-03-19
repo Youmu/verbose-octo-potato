@@ -1,0 +1,42 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default-debug",
+      "displayName": "Default Debug",
+      "description": "Native debug build",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-aarch64-release",
+      "displayName": "Linux AArch64 Release (Cross)",
+      "description": "Cross-compile for Linux ARM64 using GNU cross toolchain",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/aarch64-release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/aarch64-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MMS_MONITOR_BUILD_TESTS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default-debug",
+      "configurePreset": "default-debug"
+    },
+    {
+      "name": "linux-aarch64-release",
+      "configurePreset": "linux-aarch64-release"
+    }
+  ]
+}
