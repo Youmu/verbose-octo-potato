@@ -19,6 +19,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(mms_monitor STATIC
   src/mms_monitor.cpp
+  src/serial_interface.cpp
 )
 add_library(MMSMonitor::mms_monitor ALIAS mms_monitor)
 
