@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Potato Viewer</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 1rem; }
+      #messages { margin-top: 1rem; }
+      .msg { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Potato Viewer</h1>
+    <label>Password: <input id="pwd" type="password" /></label>
+    <button id="submit">Submit</button>
+
+    <div id="messages"></div>
+
+    <script>
+    async function sha256(text) {
+      const enc = new TextEncoder();
+      const data = enc.encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return new Uint8Array(hash);
+    }
+
+    async function importKey(raw) {
+      return crypto.subtle.importKey('raw', raw, {name: 'AES-CBC'}, false, ['decrypt']);
+    }
+
+    function b64ToUint8(b64) {
+      const bin = atob(b64);
+      const len = bin.length;
+      const arr = new Uint8Array(len);
+      for (let i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+      return arr;
+    }
+
+    async function decryptMessage(key, b64) {
+      const data = b64ToUint8(b64);
+      const iv = data.slice(0, 16);
+      const ct = data.slice(16);
+      try {
+        const plain = await crypto.subtle.decrypt({name: 'AES-CBC', iv}, key, ct);
+        const dec = new TextDecoder().decode(plain);
+        return dec;
+      } catch (e) {
+        return '[decryption failed]';
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', async () => {
+      const pwd = document.getElementById('pwd').value || '';
+      const keyBytes = await sha256(pwd + 'potato');
+      const key = await importKey(keyBytes);
+      const resp = await fetch('/potato/msg');
+      const json = await resp.json();
+      const out = document.getElementById('messages');
+      out.innerHTML = '';
+      for (const m of json.Messages || []) {
+        const text = await decryptMessage(key, m.Data);
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.textContent = `${m.Index} ${m.TimeStamp} ${m.From} — ${text}`;
+        out.appendChild(div);
+      }
+    });
+    </script>
+  </body>
+</html>
