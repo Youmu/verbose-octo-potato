@@ -51,5 +51,12 @@ It has a textbox to input the password. and a 'submit' button next to the textbo
 When the user click submit button:
 * Calls GET /potato/msg to get the messages.
 * Generate encryption key by calculate sha256 on <Password> + "potato". Password is UTF8 encoded.
+* Save the generated key in cookie, no expire time. If the key can be found in cookie, the password textbox shows some place-holder.
 * Decrypt Data using the key using AES256_CBC.
 * Show the message on the page.
+
+About the UI:
+* Use bootstrap theme to make the page works on both PC and phone.
+* List the message in order that most recent on top.
+* Each item has a header and content. The header is time and sender. Show the time in format: MM-DD HH:MM:SS in client timezone.
+* The content is the decrypted message.
