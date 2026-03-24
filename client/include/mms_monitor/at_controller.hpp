@@ -1,12 +1,14 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <string_view>
 
 namespace mms_monitor {
 
-typedef void (*SendMessageCb)(const std::string& message);
-typedef bool (*SmsCb)(const std::string& sender, const std::string& body);
+using SendMessageCb = std::function<void(const std::string& message)>;
+using SmsCb = std::function<bool(const std::string& sender, const std::string& body)>;
+using NewMsgCb = std::function<void()>;
 
 class AtController {
  public:
@@ -24,6 +26,7 @@ class AtController {
   void ListSms(SmsStatus status);
   void SetOnSend(SendMessageCb sendCb);
   void SetOnSmsReceived(SmsCb smsCb);
+  void SetOnSmsNewMsg(NewMsgCb newMsgCb);
   void ReceiveMessage(std::string message);
 
  private:
@@ -36,6 +39,7 @@ class AtController {
 
   SendMessageCb send_cb_{nullptr};
   SmsCb sms_cb_{nullptr};
+  NewMsgCb new_msg_cb_{nullptr};
   State state_{State::kInit};
   int last_cmgl_index_{-1};
   int last_cmgl_message_status_{-1};

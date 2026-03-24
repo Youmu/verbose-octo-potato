@@ -17,9 +17,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 add_library(mms_monitor STATIC
   src/at_controller.cpp
   src/mms_monitor.cpp
+  src/potato_client.cpp
   src/serial_interface.cpp
 )
 add_library(MMSMonitor::mms_monitor ALIAS mms_monitor)
@@ -31,6 +36,12 @@ target_include_directories(mms_monitor
 )
 
 target_compile_features(mms_monitor PUBLIC cxx_std_20)
+target_link_libraries(mms_monitor
+  PRIVATE
+    OpenSSL::Crypto
+    CURL::libcurl
+    nlohmann_json::nlohmann_json
+)
 
 if(MMS_MONITOR_ENABLE_WARNINGS)
   if(MSVC)

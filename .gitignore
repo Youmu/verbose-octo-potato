@@ -4,3 +4,4 @@
 *.swo
 server/db.sqlite3
 *.pyc
+client/build/

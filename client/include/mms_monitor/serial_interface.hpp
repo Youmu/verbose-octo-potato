@@ -18,6 +18,7 @@ class SerialInterface {
   SerialInterface& operator=(const SerialInterface&) = delete;
 
   void Start();
+  void Stop();
   void SetOnReceive(SerialReceiveCb onReceive);
   void SendMessage(const std::string& msg) const;
 

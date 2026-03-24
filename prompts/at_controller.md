@@ -17,15 +17,21 @@ Class name: AtController
 - `SetOnSmsReceived(SmsCb smsCb)`
   Sets the SMS callback. 
 
+- `SetOnSmsNewMsg(NewMsgCb newMsgCb)`
+  Set the callback for new msg arrival.
+
 - `ReceiveMessage(string message)`
   Called when receive a line of message from the serial port. See Parse Message for details.
 
 # Data Types
-- `typedef void(*SendMessageCb)(const string &message)`  
+- `using SendMessageCb = std::function<void(const std::string &message)>`  
   This function is called when the controller wants to send a line of message.
 
-- `typedef bool(*SmsCb)(const string &sender, const string &body)`
-  This function is called when a new message arrives. Returns true if the message is handled and can be deleted.
+- `using SmsCb = std::function<bool(const std::string &sender, const std::string &body)>`  
+  This function is called when a message content is returned by +CMGL. Returns true if the message is handled and can be deleted.
+
+- `using NewMsgCb = std::function<void()>`  
+  This function is called when a new message arrived.
 
 # State Machine
 - Init
@@ -34,15 +40,28 @@ Class name: AtController
 
 # Details
 
-- Parse message.  
-  Parse message is called inside receive message. 
+## Parse message.  
+
+Parse message is called inside receive message. 
+
+- `at+`  
   If a line begins with "at+", it is command echo. Ignore it.
-  If a line begins with +, it receives a message from the device.
-  The formate is like '+CMGL: 4,0,"",,163'. CMGL is the command. It is the response of list message.
+
+- `+CMGL`  
+  If a line begins with "+CMGL", it is the response of list message.
+
   The formate is +CMGL: index,message_status,...
+
+  Example: '+CMGL: 4,0,"",,163'. 
+  
   Parse the index and message_status, ignore other fields. When CMGL is received, it goes to the CMGL state.
   In CMGL state, it will receive a line of heximal numbers. This line is the message body. Parse the message body.
   Decode parsed sender/body to UTF-8 before calling SmsCb.
   Calls SmsCb with sender and message body. If SmsCb returns true, delete the message by send AT+CMGD=index.
   In CMGL state, it may receive another +CMGL line. This is another message.
-  When OK is received. List is completed, goes to the Init state.
+
+- `+CMTI`  
+  New message received. Calls NewMsgCb();
+
+- `OK`  
+  When OK is received. Current command is completed. Goes to the Init state.
