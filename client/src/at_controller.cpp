@@ -356,13 +356,13 @@ std::pair<int, int> ParseCmglHeader(std::string_view line) {
 }  // namespace
 
 void AtController::Init() {
-  if (send_cb_ != nullptr) {
+  if (send_cb_) {
     send_cb_("AT+CMGF=0");
   }
 }
 
 void AtController::ListSms(SmsStatus status) {
-  if (send_cb_ == nullptr) {
+  if (!send_cb_) {
     return;
   }
   send_cb_("AT+CMGL=" + std::to_string(static_cast<int>(status)));
@@ -371,6 +371,8 @@ void AtController::ListSms(SmsStatus status) {
 void AtController::SetOnSend(SendMessageCb sendCb) { send_cb_ = sendCb; }
 
 void AtController::SetOnSmsReceived(SmsCb smsCb) { sms_cb_ = smsCb; }
+
+void AtController::SetOnSmsNewMsg(NewMsgCb newMsgCb) { new_msg_cb_ = newMsgCb; }
 
 void AtController::ReceiveMessage(std::string message) {
   ParseMessage(message);
@@ -398,6 +400,12 @@ void AtController::ParseMessage(std::string_view message) {
 
   // Unsolicited or response header line from modem.
   if (line.front() == '+') {
+    if (StartsWithCaseInsensitive(line, "+CMTI")) {
+      if (new_msg_cb_) {
+        new_msg_cb_();
+      }
+      return;
+    }
     if (StartsWithCaseInsensitive(line, "+CMGL:")) {
       const auto [index, message_status] = ParseCmglHeader(line);
       state_ = State::kCmgl;
@@ -410,12 +418,12 @@ void AtController::ParseMessage(std::string_view message) {
   // In CMGL state, next non-header line is the message body (hex string).
   if (state_ == State::kCmgl) {
     last_cmgl_body_.assign(line.begin(), line.end());
-    if (sms_cb_ != nullptr) {
+    if (sms_cb_) {
       const ParsedPdu parsed = ParseDeliverPdu(line);
       const std::string sender = parsed.ok ? parsed.sender : std::string("UNKNOWN");
       const std::string body = parsed.ok ? parsed.body : last_cmgl_body_;
       const bool handled = sms_cb_(sender, body);
-      if (handled && send_cb_ != nullptr && last_cmgl_index_ >= 0) {
+      if (handled && send_cb_ && last_cmgl_index_ >= 0) {
         send_cb_("AT+CMGD=" + std::to_string(last_cmgl_index_));
       }
     }

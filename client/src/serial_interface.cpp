@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <system_error>
-
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -81,14 +80,7 @@ SerialInterface::SerialInterface(const std::string& device, int boudrate)
 }
 
 SerialInterface::~SerialInterface() {
-  running_ = false;
-  if (reader_thread_.joinable()) {
-    reader_thread_.join();
-  }
-  if (fd_ >= 0) {
-    close(fd_);
-    fd_ = -1;
-  }
+  Stop();
 }
 
 void SerialInterface::Start() {
@@ -98,6 +90,20 @@ void SerialInterface::Start() {
   }
   running_ = true;
   reader_thread_ = std::thread(&SerialInterface::ReadLoop, this);
+}
+
+void SerialInterface::Stop() {
+  running_ = false;
+
+  // Closing the descriptor unblocks read() in ReadLoop.
+  if (fd_ >= 0) {
+    close(fd_);
+    fd_ = -1;
+  }
+
+  if (reader_thread_.joinable() && reader_thread_.get_id() != std::this_thread::get_id()) {
+    reader_thread_.join();
+  }
 }
 
 void SerialInterface::SetOnReceive(SerialReceiveCb onReceive) { on_receive_.store(onReceive); }
@@ -125,7 +131,7 @@ void SerialInterface::SendMessage(const std::string& msg) const {
 
 void SerialInterface::ReadLoop() {
   std::string line;
-  line.reserve(256);
+  line.reserve(1024);
 
   while (running_) {
     char ch = '\0';

@@ -9,6 +9,9 @@ Class name: SerialInterface
 - `Start()`  
   Start monitoring the serial port.
 
+- `Stop()`  
+  Called from another thread to stop waiting for new msgs.
+
 - `SetOnReceive(SerialReceiveCb onReceive)`  
   Set the callback when a line is received from the serial port.
 
