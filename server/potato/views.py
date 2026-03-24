@@ -45,7 +45,7 @@ def get_msgs(request):
 
 def view_page(request):
     from django.shortcuts import render
-    return render(request, 'Potato/view.html')
+    return render(request, 'potato/view.html')
 
 
 def msg_handler(request):

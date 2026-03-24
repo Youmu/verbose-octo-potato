@@ -46,7 +46,7 @@ Schema:
 |Data|TEXT|
 
 # Web Page
-Url: /Potato/view.html
+Url: /potato/view.html
 It has a textbox to input the password. and a 'submit' button next to the textbox.
 When the user click submit button:
 * Calls GET /potato/msg to get the messages.
