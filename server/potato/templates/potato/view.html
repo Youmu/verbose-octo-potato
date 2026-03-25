@@ -37,7 +37,7 @@
                 />
                 <button id="submit" class="btn btn-primary" type="button">Submit</button>
               </div>
-              <div class="form-text">Decrypts messages from the last 24 hours.</div>
+              <div class="form-text">Messages from the last 24 hours.</div>
             </div>
           </div>
 
@@ -47,7 +47,7 @@
     </main>
 
     <script>
-    const COOKIE_KEY_NAME = 'potato_key';
+    const STORE_KEY_NAME = 'potato_key';
 
     async function sha256(text) {
       const enc = new TextEncoder();
@@ -74,22 +74,6 @@
       return btoa(bin);
     }
 
-    function getCookie(name) {
-      const key = `${name}=`;
-      const parts = document.cookie ? document.cookie.split(';') : [];
-      for (const partRaw of parts) {
-        const part = partRaw.trim();
-        if (part.startsWith(key)) {
-          return decodeURIComponent(part.substring(key.length));
-        }
-      }
-      return null;
-    }
-
-    function setSessionCookie(name, value) {
-      document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
-    }
-
     function formatClientTime(ts) {
       const date = new Date(ts);
       if (Number.isNaN(date.getTime())) return ts;
@@ -114,17 +98,17 @@
       });
     }
 
-    async function resolveKeyFromInputOrCookie() {
+    async function resolveKeyFromInputOrSaved() {
       const pwdInput = document.getElementById('pwd');
       const pwd = pwdInput.value || '';
 
       if (pwd) {
         const keyBytes = await sha256(pwd + 'potato');
-        setSessionCookie(COOKIE_KEY_NAME, uint8ToB64(keyBytes));
+        localStorage.setItem(STORE_KEY_NAME, uint8ToB64(keyBytes))
         return importKey(keyBytes);
       }
-
-      const savedKey = getCookie(COOKIE_KEY_NAME);
+      
+      const savedKey = localStorage.getItem(STORE_KEY_NAME);
       if (!savedKey) return null;
       return importKey(b64ToUint8(savedKey));
     }
@@ -171,8 +155,8 @@
     }
 
     (function initPasswordPlaceholder() {
-      if (getCookie(COOKIE_KEY_NAME)) {
-        document.getElementById('pwd').placeholder = 'Saved key found (enter new password to replace)';
+      if (localStorage.getItem(STORE_KEY_NAME)) {
+        document.getElementById('pwd').placeholder = '==Key Saved==';
       }
     })();
 
@@ -181,7 +165,7 @@
       out.innerHTML = '';
 
       try {
-        const key = await resolveKeyFromInputOrCookie();
+        const key = await resolveKeyFromInputOrSaved();
         if (!key) {
           renderInfo(out, 'Enter password at least once to generate and save the key.');
           return;
