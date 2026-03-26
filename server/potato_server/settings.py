@@ -59,12 +59,12 @@ WSGI_APPLICATION = 'potato_server.wsgi.application'
 DATABASES = {
    'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DJANGO_MYSQL_DATABASE') or 'potato_db',
-        'USER': os.environ.get('DJANGO_MYSQL_USER') or 'root',
-        'PASSWORD': os.environ.get('DJANGO_MYSQL_PASSWORD') or 'root',
-        'HOST': os.environ.get('DJANGO_MYSQL_HOST') or '127.0.0.1',
+        'NAME': os.environ.get('POTATO_MYSQL_DATABASE') or 'potato_db',
+        'USER': os.environ.get('POTATO_MYSQL_USER') or 'root',
+        'PASSWORD': os.environ.get('POTATO_MYSQL_PASSWORD') or 'root',
+        'HOST': os.environ.get('POTATO_MYSQL_HOST') or '127.0.0.1',
         'PORT': int(
-            os.environ.get('DJANGO_MYSQL_PORT') or 3306),
+            os.environ.get('POTATO_MYSQL_PORT') or 3306),
    }
 }
 LANGUAGE_CODE = 'en-us'

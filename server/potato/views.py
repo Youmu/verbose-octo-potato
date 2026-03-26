@@ -1,6 +1,7 @@
 import base64
+import os
 from datetime import timedelta
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse, HttpResponseForbidden
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -10,6 +11,14 @@ import json
 
 @require_http_methods(['POST'])
 def post_msg(request):
+    expected_token = os.environ.get('POTATO_AUTH_TOKEN') or ''
+    if not expected_token:
+        return HttpResponseForbidden('token not configured')
+
+    auth_header = request.headers.get('Authorization') or ''
+    if not auth_header.startswith('Bearer ') or auth_header[7:] != expected_token:
+        return HttpResponseForbidden('invalid token')
+
     try:
         payload = json.loads(request.body)
     except Exception:
@@ -20,6 +29,13 @@ def post_msg(request):
     data = payload.get('Data')
     if not ts or not frm or not data:
         return HttpResponseBadRequest('missing fields')
+
+    try:
+        raw = base64.b64decode(data, validate=True)
+    except Exception:
+        return HttpResponseBadRequest('invalid Data')
+    if len(raw) < 17:
+        return HttpResponseBadRequest('invalid Data')
 
     dt = parse_datetime(ts)
     if dt is None:

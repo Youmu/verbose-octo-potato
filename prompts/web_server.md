@@ -11,6 +11,7 @@ It has one web page and two APIs.
     "Data": "4tqdKndH35nWIouW32lVITYudwU6fU2kDm8ZHAvFx28="
   } 
   Save the message into the table.
+  Authentication is requrired. Using bearer authentication. The token is loaded from the env variable POTATO_AUTH_TOKEN
   Note: `Data` is a base64-encoded byte string of `IV || Ciphertext` (IV is the first 16 bytes).
 
 - `GET /potato/msg`  
@@ -60,3 +61,13 @@ About the UI:
 * List the message in order that most recent on top.
 * Each item has a header and content. The header is time and sender. Show the time in format: MM-DD HH:MM:SS in client timezone.
 * The content is the decrypted message.
+
+# Configuration Environment Variables
+| Variable | Description | Default |
+|----------|-------------|---------|
+| POTATO_AUTH_TOKEN | Bearer token required by `POST /potato/msg` | (required, no default) |
+| POTATO_MYSQL_DATABASE | MySQL database name | `potato_db` |
+| POTATO_MYSQL_USER | MySQL user | `root` |
+| POTATO_MYSQL_PASSWORD | MySQL password | `root` |
+| POTATO_MYSQL_HOST | MySQL host | `127.0.0.1` |
+| POTATO_MYSQL_PORT | MySQL port | `3306` |
