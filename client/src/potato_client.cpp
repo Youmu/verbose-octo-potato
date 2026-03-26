@@ -130,6 +130,8 @@ PotatoClient::PotatoClient(std::string potato_ep, std::string key)
   std::copy(decoded_key.begin(), decoded_key.end(), key_bytes_.begin());
 }
 
+void PotatoClient::SetAuthToken(std::string token) { auth_token_ = std::move(token); }
+
 void PotatoClient::PushMessage(std::string timestamp, std::string sender, std::string msg) {
   std::array<unsigned char, 16> iv{};
   if (RAND_bytes(iv.data(), static_cast<int>(iv.size())) != 1) {
@@ -157,6 +159,10 @@ void PotatoClient::PushMessage(std::string timestamp, std::string sender, std::s
 
   curl_slist* headers = nullptr;
   headers = curl_slist_append(headers, "Content-Type: application/json");
+  if (!auth_token_.empty()) {
+    const std::string auth_header = "Authorization: Bearer " + auth_token_;
+    headers = curl_slist_append(headers, auth_header.c_str());
+  }
 
   curl_easy_setopt(curl, CURLOPT_URL, potato_ep_.c_str());
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);

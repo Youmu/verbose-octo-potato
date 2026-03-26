@@ -96,6 +96,12 @@ int main() {
 
     SerialInterface serial_interface(serial_path, serial_baudrate);
     PotatoClient potato_client(potato_ep, potato_key);
+    
+    const char* potato_auth_token = std::getenv("POTATO_AUTH_TOKEN");
+    if (potato_auth_token != nullptr && !std::string(potato_auth_token).empty()) {
+      potato_client.SetAuthToken(potato_auth_token);
+    }
+
     AtController at_controller;
 
     g_potato_client = &potato_client;
