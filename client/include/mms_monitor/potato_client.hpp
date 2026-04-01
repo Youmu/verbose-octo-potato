@@ -10,10 +10,12 @@ class PotatoClient {
   PotatoClient(std::string potato_ep, std::string key);
 
   void PushMessage(std::string timestamp, std::string sender, std::string msg);
+  void SetAuthToken(std::string token);
 
  private:
   std::string potato_ep_;
   std::string key_base64_;
+  std::string auth_token_;
   std::array<unsigned char, 32> key_bytes_{};
 };
 

@@ -17,4 +17,8 @@ Class Name: PotatoClient
     "Data": "4tqdKndH35nWIouW32lVITYudwU6fU2kDm8ZHAvFx28="
   } 
   ```
+  If the auth token is set via `SetAuthToken()`, use the bearer authentication with the token. 
+
+- `SetAuthToken(string token)`  
+  Sets the auth token for potato_ep.
 
