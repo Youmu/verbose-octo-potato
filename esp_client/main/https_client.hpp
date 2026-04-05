@@ -26,7 +26,6 @@ class HttpsClient {
 
  private:
   std::string auth_token_;
-  static const char* MethodToString(Method method);
 };
 
 }  // namespace espclient

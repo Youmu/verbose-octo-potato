@@ -17,23 +17,6 @@ HttpsClient::HttpsClient() {
 
 HttpsClient::~HttpsClient() = default;
 
-const char* HttpsClient::MethodToString(Method method) {
-  switch (method) {
-    case Method::GET:
-      return "GET";
-    case Method::POST:
-      return "POST";
-    case Method::PUT:
-      return "PUT";
-    case Method::DELETE_:
-      return "DELETE";
-    case Method::PATCH:
-      return "PATCH";
-    default:
-      return "GET";
-  }
-}
-
 esp_http_client_method_t MethodToHttpMethod(Method method) {
   switch (method) {
     case Method::GET:
@@ -60,6 +43,10 @@ void HttpsClient::SendRequest(Method method,
                               const std::string& payload,
                               std::function<void(int, std::string)> cb) {
     char buf[2048];
+    esp_err_t err;
+    int64_t content_length;
+    bool withPayload = false;
+    int data_read;
     esp_http_client_config_t cfg = {};
     cfg.url = uri.c_str();
     cfg.skip_cert_common_name_check = true;  // Skip common name check for testing
@@ -67,30 +54,52 @@ void HttpsClient::SendRequest(Method method,
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     esp_http_client_set_method(client, MethodToHttpMethod(method));
-    esp_err_t err = esp_http_client_open(client, 0);
-    int64_t content_length;
-    if (err == ESP_OK) {
-      content_length = esp_http_client_fetch_headers(client);
-      if(content_length < 0) {
-        ESP_LOGE(TAG, "Failed to fetch headers: %lld", content_length);
-        }
-        else {
-          ESP_LOGI(TAG, "Content length: %lld", content_length);
-          int data_read = esp_http_client_read_response(client, buf, 2048);
-            if (data_read >= 0) {
-              int status_code = esp_http_client_get_status_code(client);
-              int cl = esp_http_client_get_content_length(client);
-                ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld", status_code, cl);
-                buf[content_length] = '\0';  // Null-terminate the buffer
-                cb(status_code, std::string(buf));
-            } else {
-                ESP_LOGE(TAG, "Failed to read response");
-            }
-        }
-    } else {
-        ESP_LOGE(TAG, "HTTP request failed: %s", esp_err_to_name(err));
-        cb(-1, "");
-    } 
+    if(method == Method::POST || method == Method::PUT || method == Method::PATCH) {
+      err = esp_http_client_open(client, payload.size());
+      withPayload = true;
+    }
+    else {
+      err = esp_http_client_open(client, 0);
+      withPayload = false;
+    }
+    if(err != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
+      goto error;
+    }
+    
+    if(!auth_token_.empty()) {
+      std::string header_value = "Bearer " + auth_token_;
+      esp_http_client_set_header(client, "Authorization", header_value.c_str());
+    }
+
+    if(withPayload) {
+      int wlen = esp_http_client_write(client, payload.c_str(), payload.size());
+      if(wlen < 0) {
+        ESP_LOGE(TAG, "Failed to write payload: %d", wlen);
+        goto error;
+      }
+    }
+    content_length = esp_http_client_fetch_headers(client);
+    if(content_length < 0) {
+      ESP_LOGE(TAG, "Failed to fetch headers: %lld", content_length);
+      goto error;
+    }
+    data_read = esp_http_client_read_response(client, buf, 2048);
+    if(data_read < 0) {
+      ESP_LOGE(TAG, "Failed to read response: %d", data_read);
+      goto error;
+    }
+    {
+      int status_code = esp_http_client_get_status_code(client);
+      int cl = esp_http_client_get_content_length(client);
+      ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld", status_code, cl);
+      buf[content_length] = '\0';  // Null-terminate the buffer
+      cb(status_code, std::string(buf));
+      esp_http_client_cleanup(client);
+      return;
+    }
+  error:
+    cb(-1, "");
     esp_http_client_cleanup(client);
   } 
 
