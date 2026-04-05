@@ -796,32 +796,6 @@ CONFIG_COMPILER_CXX_GLIBCXX_CONSTEXPR_NO_CHANGE=y
 #
 
 #
-# Bluetooth
-#
-# default:
-# CONFIG_BT_ENABLED is not set
-
-#
-# Common Options
-#
-
-#
-# BLE Log
-#
-# default:
-# CONFIG_BLE_LOG_ENABLED is not set
-# end of BLE Log
-
-# default:
-# CONFIG_BT_BLE_LOG_SPI_OUT_ENABLED is not set
-# default:
-# CONFIG_BT_BLE_LOG_UHCI_OUT_ENABLED is not set
-# default:
-# CONFIG_BT_LE_USED_MEM_STATISTICS_ENABLED is not set
-# end of Common Options
-# end of Bluetooth
-
-#
 # eFuse Bit Manager
 #
 # default:
@@ -837,6 +811,31 @@ CONFIG_EFUSE_CODE_SCHEME_COMPAT_3_4=y
 # default:
 CONFIG_EFUSE_MAX_BLK_LEN=192
 # end of eFuse Bit Manager
+
+#
+# ESP-TLS
+#
+# default:
+CONFIG_ESP_TLS_USING_MBEDTLS=y
+# default:
+# CONFIG_ESP_TLS_CUSTOM_STACK is not set
+# default:
+# CONFIG_ESP_TLS_USE_SECURE_ELEMENT is not set
+# default:
+# CONFIG_ESP_TLS_CLIENT_SESSION_TICKETS is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_SESSION_TICKETS is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_CERT_SELECT_HOOK is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_MIN_AUTH_MODE_OPTIONAL is not set
+# default:
+# CONFIG_ESP_TLS_PSK_VERIFICATION is not set
+# default:
+# CONFIG_ESP_TLS_INSECURE is not set
+# default:
+CONFIG_ESP_TLS_DYN_BUF_STRATEGY_SUPPORTED=y
+# end of ESP-TLS
 
 #
 # Wireless Coexistence
@@ -860,17 +859,6 @@ CONFIG_ESP_ERR_TO_NAME_LOOKUP=y
 # default:
 # CONFIG_GPIO_CTRL_FUNC_IN_IRAM is not set
 # end of ESP-Driver:GPIO Configurations
-
-#
-# ESP-Driver:SPI Configurations
-#
-# default:
-CONFIG_SPI_MASTER_ISR_IN_IRAM=y
-# default:
-# CONFIG_SPI_SLAVE_IN_IRAM is not set
-# default:
-CONFIG_SPI_SLAVE_ISR_IN_IRAM=y
-# end of ESP-Driver:SPI Configurations
 
 #
 # ESP-Driver:UART Configurations
@@ -900,19 +888,6 @@ CONFIG_ESP_EVENT_POST_FROM_ISR=y
 # default:
 CONFIG_ESP_EVENT_POST_FROM_IRAM_ISR=y
 # end of Event Loop Library
-
-#
-# GDB Stub
-#
-# default:
-CONFIG_ESP_GDBSTUB_ENABLED=y
-# default:
-# CONFIG_ESP_SYSTEM_GDBSTUB_RUNTIME is not set
-# default:
-CONFIG_ESP_GDBSTUB_SUPPORT_TASKS=y
-# default:
-CONFIG_ESP_GDBSTUB_MAX_TASKS=32
-# end of GDB Stub
 
 #
 # Hardware Settings
@@ -1084,8 +1059,6 @@ CONFIG_ESP_BROWNOUT_USE_INTR=y
 # end of Brownout Detector
 # end of Power Supplier
 
-# default:
-CONFIG_ESP_SPI_BUS_LOCK_ISR_FUNCS_IN_IRAM=y
 # default:
 CONFIG_ESP_INTR_IN_IRAM=y
 # end of Hardware Settings
@@ -1302,8 +1275,6 @@ CONFIG_ESP_SYSTEM_IN_IRAM=y
 CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
 # default:
 # CONFIG_ESP_SYSTEM_PANIC_SILENT_REBOOT is not set
-# default:
-# CONFIG_ESP_SYSTEM_PANIC_GDBSTUB is not set
 # default:
 CONFIG_ESP_SYSTEM_PANIC_REBOOT_DELAY_SECONDS=0
 # default:
@@ -2650,8 +2621,6 @@ CONFIG_STACK_CHECK_NONE=y
 # CONFIG_EVENT_LOOP_PROFILING is not set
 CONFIG_POST_EVENTS_FROM_ISR=y
 CONFIG_POST_EVENTS_FROM_IRAM_ISR=y
-CONFIG_GDBSTUB_SUPPORT_TASKS=y
-CONFIG_GDBSTUB_MAX_TASKS=32
 # CONFIG_TWO_UNIVERSAL_MAC_ADDRESS is not set
 CONFIG_FOUR_UNIVERSAL_MAC_ADDRESS=y
 CONFIG_NUMBER_OF_UNIVERSAL_MAC_ADDRESS=4
@@ -2732,7 +2701,6 @@ CONFIG_TRACEMEM_RESERVE_DRAM=0x0
 # CONFIG_ESP32_PANIC_PRINT_HALT is not set
 CONFIG_ESP32_PANIC_PRINT_REBOOT=y
 # CONFIG_ESP32_PANIC_SILENT_REBOOT is not set
-# CONFIG_ESP32_PANIC_GDBSTUB is not set
 CONFIG_SYSTEM_EVENT_QUEUE_SIZE=32
 CONFIG_SYSTEM_EVENT_TASK_STACK_SIZE=2304
 CONFIG_MAIN_TASK_STACK_SIZE=3584

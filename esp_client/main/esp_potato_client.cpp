@@ -3,12 +3,15 @@
 #include "nvs_flash.h"
 #include "serial_interface.hpp"
 #include "wifi_controller.hpp"
+#include "time_sync.h"
+
 static const char *TAG = "UART_IF";
 
 using namespace espclient;
 
 SerialInterface *pSi;
 WifiController *pWifi;
+time_sync *pTimeSync;
 
 extern "C" void potato_app(){
 
@@ -23,10 +26,14 @@ extern "C" void potato_app(){
     pWifi = new espclient::WifiController();
 
     pSi = new espclient::SerialInterface(1, 115200);
+    
+    pTimeSync = new time_sync();
+
     ESP_LOGI(TAG, "Potato App started");
     pWifi->SetOnConnected(
         [](){
             ESP_LOGI(TAG, "WiFi connected callback");
+            pTimeSync->SyncTime();
         }
     );
     pWifi->SetOnDisconnected(
