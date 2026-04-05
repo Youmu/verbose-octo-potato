@@ -5,8 +5,10 @@
 #include "wifi_controller.hpp"
 #include "time_sync.h"
 #include "https_client.hpp"
+#include "AtController.hpp"
+#include "esp_timer.h"
 
-static const char *TAG = "UART_IF";
+static const char *TAG = "POTATO_CLIENT";
 
 using namespace espclient;
 
@@ -14,6 +16,7 @@ SerialInterface *pSi;
 WifiController *pWifi;
 time_sync *pTimeSync;
 HttpsClient *pHttpsClient;
+AtController *pAtController;
 
 extern "C" void InitTaskFunction(void *pvParameters){
     pTimeSync->SyncTime();
@@ -48,6 +51,8 @@ extern "C" void potato_app(){
 
     pHttpsClient = new HttpsClient();
 
+    pAtController = new AtController();
+
     ESP_LOGI(TAG, "Potato App started");
     pWifi->SetOnConnected(
         [](){
@@ -75,11 +80,40 @@ extern "C" void potato_app(){
 
     pWifi->ConnectToHotspot("TooYoung", "123456789");
     
+    // Set up AT Controller
+    pAtController->SetOnSend([](const std::string &msg) {
+        ESP_LOGI(TAG, "Sending AT command: %s", msg.c_str());
+        pSi->SendMessage(msg);
+    });
+    pAtController->SetOnSmsReceived([](const std::string &sender, const std::string &body) -> bool {
+        ESP_LOGI(TAG, "SMS from %s: %s", sender.c_str(), body.c_str());
+        return true; // Delete the message
+    });
+    pAtController->SetOnSmsNewMsg([]() {
+        ESP_LOGI(TAG, "New SMS received");
+        pAtController->ListSms(SmsStatus::REC_UNREAD);
+    });
+
     pSi->SetOnReceive(
         [](std::string msg){
             ESP_LOGI(TAG, "Recv str: %s", msg.c_str());
-            pSi->SendMessage("Echo: "+ msg);
+            pAtController->ReceiveMessage(msg);
         }
     );
     pSi->Start();
+    // Initialize AT Controller
+    pAtController->Init();
+
+    esp_timer_create_args_t list_msg_timer = {};
+
+    list_msg_timer.callback = [](void* p){
+                ESP_LOGI(TAG, "Periodic timer callback: List message");
+                // Here you would add code to update NVS or perform other periodic tasks
+                auto atController = reinterpret_cast<AtController*>(p);
+                atController->ListSms(SmsStatus::REC_UNREAD);
+            };
+    list_msg_timer.arg = pAtController;
+    esp_timer_handle_t nvs_update_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(nvs_update_timer, 10000000)); // Every 10 seconds
 }
