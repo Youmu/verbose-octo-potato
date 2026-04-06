@@ -1,4 +1,5 @@
 #include <string>
+#include <format>
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "serial_interface.hpp"
@@ -7,6 +8,9 @@
 #include "https_client.hpp"
 #include "AtController.hpp"
 #include "esp_timer.h"
+#include "psa/crypto.h"
+#include "mbedtls/base64.h"
+#include "sdkconfig.h"
 
 static const char *TAG = "POTATO_CLIENT";
 
@@ -21,12 +25,80 @@ AtController *pAtController;
 extern "C" void InitTaskFunction(void *pvParameters){
     pTimeSync->SyncTime();
     ESP_LOGI(TAG, "Time synchronized, now sending HTTP request");
+
+
+    std::string key_64 = CONFIG_POTATO_MSG_ENCRYPT_KEY;
+    uint8_t key_aes[32];
+    size_t key_len = 32;
+
+    uint8_t iv[16];
+    memset(iv, 0xEE, 16);
+
+    int ret = mbedtls_base64_decode(key_aes, sizeof(key_aes), &key_len,
+                                    reinterpret_cast<const unsigned char*>(key_64.c_str()), key_64.size());
+    std::string message = "Hello, this is a secret message!";
+
+    auto psa_status = psa_crypto_init();
+    psa_algorithm_t alg = PSA_ALG_CBC_PKCS7;
+
+    psa_key_attributes_t key_attr = PSA_KEY_ATTRIBUTES_INIT;
+    psa_key_id_t key_id = 0;
+
+    psa_set_key_type(&key_attr, PSA_KEY_TYPE_AES);
+    psa_set_key_bits(&key_attr, 256);
+    psa_set_key_usage_flags(&key_attr, PSA_KEY_USAGE_ENCRYPT);
+    psa_set_key_algorithm(&key_attr, alg);
+
+    psa_status = psa_import_key(&key_attr, key_aes, sizeof(key_aes), &key_id);
+
+    if(psa_status != PSA_SUCCESS) {
+        ESP_LOGE(TAG, "Key import failed: %d", psa_status);
+        vTaskDelete(NULL);
+        return;
+    }
+
+    uint8_t output[256];
+    size_t output_len = 0;  
+
+    psa_status = psa_cipher_encrypt(
+        key_id,
+        alg,
+        reinterpret_cast<const uint8_t*>(message.c_str()), message.size(),
+        output, sizeof(output), &output_len
+    );
+
+    if(psa_status != PSA_SUCCESS) {
+        ESP_LOGE(TAG, "Encryption failed: %d", psa_status);
+        psa_destroy_key(key_id);
+        vTaskDelete(NULL);
+        return;
+    }
+
+    unsigned char base64_output[512];
+    size_t base64_output_len = 0;
+    ret = mbedtls_base64_encode(base64_output, sizeof(base64_output), &base64_output_len, output, output_len);
+    if(ret != 0) {
+        ESP_LOGE(TAG, "Base64 encoding failed: %d", ret);
+        psa_destroy_key(key_id);
+        vTaskDelete(NULL);
+        return;
+    }
+
+
+    psa_destroy_key(key_id);
+
+    std::string msg = std::format(
+        "{{\"TimeStamp\":\"2026-04-06T13:29:03.123Z\",\"From\":\"13912345678\",\"Data\":\"{}\"}}", 
+        std::string(reinterpret_cast<char*>(base64_output), base64_output_len)
+    );
+    ESP_LOGI(TAG, "Encrypted message: %s", msg.c_str());
+    pHttpsClient->SetAuthToken(CONFIG_POTATO_SERVER_AUTHTOKEN);
     pHttpsClient->SendRequest(
-        Method::GET,
-        "https://www.example.com/potato/msg",
-        "",
+        Method::POST,
+        CONFIG_POTATO_SERVER_EP,
+        msg,
         [](int status, std::string response){
-            ESP_LOGI(TAG, "HTTP GET completed with status %d, response: %s", status, response.c_str());
+            ESP_LOGI(TAG, "HTTP POST completed with status %d, response: %s", status, response.c_str());
             vTaskDelete(NULL);
         }
     );
@@ -115,5 +187,5 @@ extern "C" void potato_app(){
     list_msg_timer.arg = pAtController;
     esp_timer_handle_t nvs_update_timer;
     ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(nvs_update_timer, 10000000)); // Every 10 seconds
+    ESP_ERROR_CHECK(esp_timer_start_periodic(nvs_update_timer, 30000000)); // Every 30 seconds
 }

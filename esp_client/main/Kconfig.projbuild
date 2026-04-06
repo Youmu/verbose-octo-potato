@@ -1,0 +1,21 @@
+menu "ESP Potato Client Configuration"
+
+    config POTATO_SERVER_EP
+        string "Potato Server Endpoint"
+        default "https://www.example.com/potato/msg"
+        help
+            Potato Server Endpoint.
+
+    config POTATO_SERVER_AUTHTOKEN
+        string "Auth Token of the server EP"
+        default "Hello-World!"
+        help
+            You should know where to find it.
+
+    config POTATO_MSG_ENCRYPT_KEY
+        string "The message encryption key"
+        default "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        help
+            An AES-256 encryptino key, Base64 encoded.
+
+endmenu

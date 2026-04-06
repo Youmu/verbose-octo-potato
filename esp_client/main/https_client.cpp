@@ -54,6 +54,11 @@ void HttpsClient::SendRequest(Method method,
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     esp_http_client_set_method(client, MethodToHttpMethod(method));
+    if(!auth_token_.empty()) {
+      std::string header_value = "Bearer " + auth_token_;
+      esp_http_client_set_header(client, "Authorization", header_value.c_str());
+    }
+
     if(method == Method::POST || method == Method::PUT || method == Method::PATCH) {
       err = esp_http_client_open(client, payload.size());
       withPayload = true;
@@ -67,11 +72,6 @@ void HttpsClient::SendRequest(Method method,
       goto error;
     }
     
-    if(!auth_token_.empty()) {
-      std::string header_value = "Bearer " + auth_token_;
-      esp_http_client_set_header(client, "Authorization", header_value.c_str());
-    }
-
     if(withPayload) {
       int wlen = esp_http_client_write(client, payload.c_str(), payload.size());
       if(wlen < 0) {
@@ -79,6 +79,7 @@ void HttpsClient::SendRequest(Method method,
         goto error;
       }
     }
+
     content_length = esp_http_client_fetch_headers(client);
     if(content_length < 0) {
       ESP_LOGE(TAG, "Failed to fetch headers: %lld", content_length);
