@@ -25,7 +25,6 @@ PotatoRequestBuilder::PotatoRequestBuilder(const std::string &key_base64) {
     }
 
     psa_key_attributes_t key_attr = PSA_KEY_ATTRIBUTES_INIT;
-    psa_key_id_t key_id = 0;
     psa_set_key_type(&key_attr, PSA_KEY_TYPE_AES);
     psa_set_key_bits(&key_attr, 256);
     psa_set_key_usage_flags(&key_attr, PSA_KEY_USAGE_ENCRYPT);
@@ -39,7 +38,7 @@ PotatoRequestBuilder::PotatoRequestBuilder(const std::string &key_base64) {
     }
 }
 
-std::string PotatoRequestBuilder::BuildRequest(const std::string from, const std::string &message) {
+std::string PotatoRequestBuilder::BuildRequest(const std::string &from, const std::string &message) {
     // Get current time with microseconds
     struct timeval tv;
     gettimeofday(&tv, NULL);

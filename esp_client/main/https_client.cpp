@@ -52,7 +52,7 @@ void HttpsClient::HttpTaskFunction(void* param) {
     auto request = self.request_queue_.front();
     self.request_queue_.pop();
     self.queue_mutex_.unlock();
-    self.SendRequest(request.method, request.uri, request.payload);
+    self.SendRequest(request.method, request.uri, request.payload, request.callback);
   } 
 }
 
@@ -62,7 +62,7 @@ void HttpsClient::Start() {
                 HttpTaskFunction,
                 "HttpEventLoop",
                 8192,
-                nullptr,
+                this,
                 5,
                 nullptr);
     if (created != pdPASS) {
@@ -129,15 +129,18 @@ void HttpsClient::SendRequest(Method method,
     }
     {
       int status_code = esp_http_client_get_status_code(client);
-      int cl = esp_http_client_get_content_length(client);
-      ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld", status_code, cl);
+      ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld", status_code, content_length);
       buf[content_length] = '\0';  // Null-terminate the buffer
-      cb(status_code, std::string(buf));
+      if (cb) {
+        cb(status_code, std::string(buf));
+      }
       esp_http_client_cleanup(client);
       return;
     }
   error:
-    cb(-1, "");
+    if (cb) {
+      cb(-1, "");
+    }
     esp_http_client_cleanup(client);
   } 
 

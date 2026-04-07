@@ -1,5 +1,7 @@
 #include <string>
 #include <format>
+#include <condition_variable>
+#include <mutex>
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "serial_interface.hpp"
@@ -25,6 +27,9 @@ AtController *pAtController;
 PotatoRequestBuilder *pRequestBuilder;
 
 extern "C" void InitTaskFunction(void *pvParameters){
+    std::mutex mtx;
+    std::condition_variable cv;
+
     pTimeSync->SyncTime();
     ESP_LOGI(TAG, "Time synchronized, now sending HTTP request");
     pRequestBuilder = new PotatoRequestBuilder(CONFIG_POTATO_MSG_ENCRYPT_KEY);
@@ -34,7 +39,6 @@ extern "C" void InitTaskFunction(void *pvParameters){
     std::string request_payload = pRequestBuilder->BuildRequest(from, message);
 
     ESP_LOGI(TAG, "Encrypted message: %s", request_payload.c_str());
-    
     pHttpsClient->SetAuthToken(CONFIG_POTATO_SERVER_AUTHTOKEN);
     pHttpsClient->Start();
     pHttpsClient->PushRequest(
@@ -42,11 +46,58 @@ extern "C" void InitTaskFunction(void *pvParameters){
             .method = Method::POST,
             .uri = CONFIG_POTATO_SERVER_EP,
             .payload = request_payload,
-            .callback = [](int status, std::string response){
+            .callback = [&](int status, std::string response){
                 ESP_LOGI(TAG, "HTTP POST completed with status %d, response: %s", status, response.c_str());
+                std::unique_lock<std::mutex> lock(mtx);
+                cv.notify_all();
             }
         }
     );
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock); // Wait indefinitely, or you can add a timeout if you want to exit after some time
+    }
+
+    // Initialize AT Controller callbacks
+
+    pAtController->SetOnSmsReceived([](const std::string &sender, const std::string &body) -> bool {
+        ESP_LOGI(TAG, "SMS from %s: %s", sender.c_str(), body.c_str());
+        std::string request_payload = pRequestBuilder->BuildRequest(sender, body);
+        pHttpsClient->PushRequest(
+            HttpsRequest{
+                .method = Method::POST,
+                .uri = CONFIG_POTATO_SERVER_EP,
+                .payload = request_payload,
+                .callback = [](int status, std::string response){
+                    ESP_LOGI(TAG, "HTTP POST completed with status %d, response: %s", status, response.c_str());
+                }
+            }
+        );
+        return true; // Delete the message
+    });
+    pAtController->SetOnSmsNewMsg([]() {
+        ESP_LOGI(TAG, "New SMS received");
+        pAtController->ListSms(SmsStatus::REC_UNREAD);
+    });
+
+    pSi->Start();
+
+    pAtController->Init();
+
+    esp_timer_create_args_t list_msg_timer = {};
+
+    list_msg_timer.callback = [](void* p){
+                ESP_LOGI(TAG, "Periodic timer callback: List message");
+                // Here you would add code to update NVS or perform other periodic tasks
+                auto atController = reinterpret_cast<AtController*>(p);
+                atController->ListSms(SmsStatus::REC_UNREAD);
+            };
+    list_msg_timer.arg = pAtController;
+    esp_timer_handle_t nvs_update_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(nvs_update_timer, 30000000)); // Every 30 seconds
+
+    vTaskDelete(nullptr);
 }
 
 
@@ -95,20 +146,12 @@ extern "C" void potato_app(){
         }
     );
 
-    pWifi->ConnectToHotspot("TooYoung", "123456789");
+    pWifi->ConnectToHotspot(CONFIG_POTATO_WIFI_SSID, CONFIG_POTATO_WIFI_PASSWORD);
     
     // Set up AT Controller
     pAtController->SetOnSend([](const std::string &msg) {
         ESP_LOGI(TAG, "Sending AT command: %s", msg.c_str());
         pSi->SendMessage(msg);
-    });
-    pAtController->SetOnSmsReceived([](const std::string &sender, const std::string &body) -> bool {
-        ESP_LOGI(TAG, "SMS from %s: %s", sender.c_str(), body.c_str());
-        return true; // Delete the message
-    });
-    pAtController->SetOnSmsNewMsg([]() {
-        ESP_LOGI(TAG, "New SMS received");
-        pAtController->ListSms(SmsStatus::REC_UNREAD);
     });
 
     pSi->SetOnReceive(
@@ -117,20 +160,4 @@ extern "C" void potato_app(){
             pAtController->ReceiveMessage(msg);
         }
     );
-    pSi->Start();
-    // Initialize AT Controller
-    pAtController->Init();
-
-    esp_timer_create_args_t list_msg_timer = {};
-
-    list_msg_timer.callback = [](void* p){
-                ESP_LOGI(TAG, "Periodic timer callback: List message");
-                // Here you would add code to update NVS or perform other periodic tasks
-                auto atController = reinterpret_cast<AtController*>(p);
-                atController->ListSms(SmsStatus::REC_UNREAD);
-            };
-    list_msg_timer.arg = pAtController;
-    esp_timer_handle_t nvs_update_timer;
-    ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(nvs_update_timer, 30000000)); // Every 30 seconds
 }

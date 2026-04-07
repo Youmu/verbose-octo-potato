@@ -6,3 +6,4 @@ server/db.sqlite3
 *.pyc
 client/build/
 esp_client/build/
+esp_client/sdkconfig

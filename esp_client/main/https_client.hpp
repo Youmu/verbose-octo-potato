@@ -40,7 +40,7 @@ class HttpsClient {
   void SendRequest(Method method,
                    const std::string& uri,
                    const std::string& payload,
-                   std::function<void(int, std::string)> cb = nullptr);
+                   std::function<void(int, std::string)> cb);
   std::string auth_token_;
 };
 
