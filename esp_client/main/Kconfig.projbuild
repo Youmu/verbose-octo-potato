@@ -1,5 +1,17 @@
 menu "ESP Potato Client Configuration"
 
+    config POTATO_WIFI_SSID
+        string "Wifi SSID"
+        default "TooYoung"
+        help
+            "Your Wifi SSID"
+
+    config POTATO_WIFI_PASSWORD
+        string "Wifi Password"
+        default "glgjssy-qyfhbqz"
+        help
+            "Your Wifi Password"
+
     config POTATO_SERVER_EP
         string "Potato Server Endpoint"
         default "https://www.example.com/potato/msg"

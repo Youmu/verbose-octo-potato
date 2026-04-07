@@ -703,6 +703,10 @@ CONFIG_PARTITION_TABLE_MD5=y
 # ESP Potato Client Configuration
 #
 # default:
+CONFIG_POTATO_WIFI_SSID="TooYoung"
+# default:
+CONFIG_POTATO_WIFI_PASSWORD="glgjssy-qyfhbqz"
+# default:
 CONFIG_POTATO_SERVER_EP="https://www.example.com/potato/msg"
 # default:
 CONFIG_POTATO_SERVER_AUTHTOKEN="Hello-World!"

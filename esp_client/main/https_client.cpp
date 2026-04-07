@@ -38,6 +38,43 @@ void HttpsClient::SetAuthToken(const std::string& token) {
   auth_token_ = token;
 }
 
+void HttpsClient::HttpTaskFunction(void* param) {
+  // This function can be used to process queued HTTP requests if needed
+  HttpsClient &self = *static_cast<HttpsClient*>(param);
+  while (true) {
+    // Process requests from a queue (not implemented in this example)
+    self.queue_mutex_.lock();
+    if(self.request_queue_.empty()) {
+      self.queue_mutex_.unlock();
+      vTaskDelay(pdMS_TO_TICKS(1000));  // Sleep for a while if no pending requests
+      continue;
+    }
+    auto request = self.request_queue_.front();
+    self.request_queue_.pop();
+    self.queue_mutex_.unlock();
+    self.SendRequest(request.method, request.uri, request.payload);
+  } 
+}
+
+void HttpsClient::Start() {
+  ESP_LOGI(TAG, "HttpsClient started");
+  BaseType_t created = xTaskCreate(
+                HttpTaskFunction,
+                "HttpEventLoop",
+                8192,
+                nullptr,
+                5,
+                nullptr);
+    if (created != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create HttpEventLoop task");
+    }
+}
+
+void HttpsClient::PushRequest(const HttpsRequest& request) {
+  std::lock_guard<std::mutex> lock(queue_mutex_);
+  request_queue_.push(request);
+}
+
 void HttpsClient::SendRequest(Method method,
                               const std::string& uri,
                               const std::string& payload,
