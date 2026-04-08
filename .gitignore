@@ -7,3 +7,4 @@ server/db.sqlite3
 client/build/
 esp_client/build/
 esp_client/sdkconfig
+esp_client/sdkconfig.old

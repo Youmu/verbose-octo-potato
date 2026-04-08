@@ -59,7 +59,7 @@ std::string PotatoRequestBuilder::BuildRequest(const std::string &from, const st
     std::string timeStamp = ss.str();
 
 
-    uint8_t output[176]; // 16 bytes IV + 160 bytes ciphertext (for 128-byte message with PKCS7 padding)
+    uint8_t output[256]; // 16 bytes IV + 160 bytes ciphertext (for 128-byte message with PKCS7 padding)
     size_t output_len = 0;  
 
     auto psa_status = psa_cipher_encrypt(
