@@ -12,7 +12,7 @@ time_sync::time_sync() {
     esp_sntp_init();
 }
 
-void time_sync::SyncTime() {
+bool time_sync::SyncTime() {
     // Wait for time to be synchronized
     time_t now = 0;
     struct tm timeinfo = { };
@@ -28,7 +28,9 @@ void time_sync::SyncTime() {
         time(&now);
         localtime_r(&now, &timeinfo);
         ESP_LOGI(TAG, "Time synchronized: %s", asctime(&timeinfo));
+        return true;
     } else {
         ESP_LOGE(TAG, "Failed to synchronize time");
+        return false;
     }
 }

@@ -9,11 +9,13 @@
 #include "time_sync.h"
 #include "https_client.hpp"
 #include "AtController.hpp"
+#include "RtcController.hpp"
 #include "PotatoRequestBuilder.hpp"
 #include "esp_timer.h"
 #include "psa/crypto.h"
 #include "mbedtls/base64.h"
 #include "sdkconfig.h"
+#include "time.h"
 
 static const char *TAG = "POTATO_CLIENT";
 
@@ -25,12 +27,27 @@ time_sync *pTimeSync;
 HttpsClient *pHttpsClient;
 AtController *pAtController;
 PotatoRequestBuilder *pRequestBuilder;
+RtcController *pRtcController;
 
 extern "C" void InitTaskFunction(void *pvParameters){
     std::mutex mtx;
     std::condition_variable cv;
 
-    pTimeSync->SyncTime();
+    if(pTimeSync->SyncTime()) {
+        struct tm time_info;
+        time_t now;
+        time(&now);
+        localtime_r(&now, &time_info);
+        pRtcController->SetTime(
+            time_info.tm_year + 1900,
+            time_info.tm_mon + 1,
+            time_info.tm_mday,
+            time_info.tm_hour,
+            time_info.tm_min,
+            time_info.tm_sec,
+            (time_info.tm_wday == 0) ? 7 : time_info.tm_wday // Convert Sunday from 0 to 7
+        );
+    }
     ESP_LOGI(TAG, "Time synchronized, now sending HTTP request");
     pRequestBuilder = new PotatoRequestBuilder(CONFIG_POTATO_MSG_ENCRYPT_KEY);
 
@@ -87,11 +104,8 @@ extern "C" void InitTaskFunction(void *pvParameters){
     esp_timer_create_args_t list_msg_timer = {};
 
     list_msg_timer.callback = [](void* p){
-                ESP_LOGI(TAG, "Periodic timer callback: List message");
-                // Here you would add code to update NVS or perform other periodic tasks
-                auto atController = reinterpret_cast<AtController*>(p);
-                atController->ListSms(SmsStatus::REC_UNREAD);
-            };
+        pRtcController->ReadTime();
+        };
     list_msg_timer.arg = pAtController;
     esp_timer_handle_t nvs_update_timer;
     ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));
@@ -112,6 +126,9 @@ extern "C" void potato_app(){
     ESP_ERROR_CHECK(ret);
 
     pWifi = new WifiController();
+
+    pRtcController = new RtcController();
+    pRtcController->ReadTime(true); // Read time from RTC and update system time
 
     pSi = new SerialInterface(1, 115200);
     

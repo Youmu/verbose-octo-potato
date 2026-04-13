@@ -4,7 +4,7 @@
 class time_sync {
 public:
     time_sync();
-    void SyncTime();
+    bool SyncTime();
 };
 
 #endif // TIME_SYNC_H
