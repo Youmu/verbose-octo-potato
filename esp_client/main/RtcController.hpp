@@ -3,7 +3,7 @@
 
 namespace espclient {
 
-struct DS3231_data{
+struct DS3231_time{
     struct {
         uint8_t seconds : 4;
         uint8_t seconds_tens : 3;
@@ -50,18 +50,57 @@ struct DS3231_data{
     } B6;
 };
 
+struct DS3231_ctrl{
+    // Control Register (0x0E)
+    uint16_t a1ie : 1; // Alarm 1 interrupt enable
+    uint16_t a2ie : 1; // Alarm 2 interrupt enable
+    uint16_t intcn : 1; // Interrupt control (0 for square wave output, 1 for interrupt output)
+    uint16_t rs2 : 1; // Square wave rate select bit 2
+    uint16_t rs1 : 1; // Square wave rate select bit 1
+    uint16_t bbsqw : 1; // Battery-backed square wave enable (0 to enable, 1 to disable)
+    uint16_t conv : 1; // Convert temperature (write 1 to start conversion)
+    uint16_t en_osc : 1; // Enable oscillator (0 to enable, 1 to disable)
+
+    // Status Register (0x0F)
+    uint16_t a1f : 1; // Alarm 1 flag
+    uint16_t a2f : 1; // Alarm 2 flag
+    uint16_t bsy : 1; // Busy flag (1 when the device is updating time or temperature)
+    uint16_t en32kHz : 1; // Enable 32kHz output (0 to enable, 1 to disable)
+    uint16_t reserved : 3;
+    uint16_t osf : 1; // Oscillator stop flag (1 if the oscillator has stopped)
+};
+
+struct DS3231_temp{
+    uint8_t temp_lsb; // Temperature LSB (0.25°C resolution)
+    uint8_t temp_msb; // Temperature MSB (integer part of temperature)
+};
+
+
 class RtcController {
 private:
     static constexpr uint8_t DS3231_RTC_ADDR = 0x68; // I2C address of the RTC  module
     static constexpr i2c_port_num_t I2C_PORT_NUM = I2C_NUM_0; // I2C port number
-    static constexpr gpio_num_t SDA_GPIO = GPIO_NUM_18;
-    static constexpr gpio_num_t SCL_GPIO = GPIO_NUM_17;
+    static constexpr gpio_num_t SDA_GPIO = GPIO_NUM_20;
+    static constexpr gpio_num_t SCL_GPIO = GPIO_NUM_19;
     static constexpr uint32_t I2C_SPEED = 100000; 
     
     i2c_master_bus_handle_t m_bus_handle;
     i2c_master_dev_handle_t m_dev_handle;
+#pragma pack(push, 1)
+    struct {
+        uint8_t reg_addr;
+        DS3231_time data;
+    } m_reg_time;
 
-    DS3231_data rtc_data = {};
+    struct {
+        uint8_t reg_addr;
+        DS3231_ctrl data;
+    } m_reg_ctrl;
+#pragma pack(pop)
+
+static_assert(sizeof(RtcController::m_reg_time) == sizeof(DS3231_time) + 1, "m_reg_time struct must be packed without padding");
+static_assert(sizeof(RtcController::m_reg_ctrl) == sizeof(DS3231_ctrl) + 1, "m_reg_ctrl struct must be packed without padding");
+
 public:
     RtcController();
     ~RtcController();

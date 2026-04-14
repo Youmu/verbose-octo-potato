@@ -19,6 +19,10 @@ bool time_sync::SyncTime() {
     int retry = 0;
     const int retry_count = 10;
 
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    ESP_LOGE(TAG, "Current time: %s", asctime(&timeinfo));
+
     while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
         ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
         vTaskDelay(5000 / portTICK_PERIOD_MS);
