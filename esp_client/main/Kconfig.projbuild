@@ -30,4 +30,29 @@ menu "ESP Potato Client Configuration"
         help
             An AES-256 encryptino key, Base64 encoded.
 
+    config POTATO_PIN_I2C_SDA
+        int "RTC Controller I2C SDA Pin"
+        default 20
+        help
+            The GPIO number of I2C SDA Pin
+
+    config POTATO_PIN_I2C_SCL
+        int "RTC Controller I2C SCL Pin"
+        default 19
+        help
+            The GPIO number of I2C SDA Pin
+
+    config POTATO_PIN_UART_TX
+        int "UART TX Ping"
+        default 10
+        help
+            The GPIO number of TX pin of UART 1
+
+    config POTATO_PIN_UART_RX
+        int "UART RX Ping"
+        default 11
+        help
+            The GPIO number of RX pin of UART 1
+
+
 endmenu

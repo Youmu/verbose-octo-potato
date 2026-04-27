@@ -30,8 +30,8 @@ RtcController::RtcController():
 
     i2c_master_bus_config_t bus_config = {
         .i2c_port = I2C_PORT_NUM,
-        .sda_io_num = SDA_GPIO, 
-        .scl_io_num = SCL_GPIO,
+        .sda_io_num = static_cast<gpio_num_t>(CONFIG_POTATO_PIN_I2C_SDA), 
+        .scl_io_num = static_cast<gpio_num_t>(CONFIG_POTATO_PIN_I2C_SCL),
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .intr_priority = 0,

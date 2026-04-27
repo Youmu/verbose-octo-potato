@@ -9,8 +9,6 @@
 static const char *TAG = "UART_IF";
 
 namespace espclient{
-constexpr int potatoPinTx = (10);
-constexpr int potatoPinRx = (11);
 constexpr int bufferSize = 2048;
 constexpr TickType_t kReadTimeoutTicks = pdMS_TO_TICKS(100);
 
@@ -37,7 +35,7 @@ SerialInterface::SerialInterface(int uartDevNum, int boudrate)
 
     ESP_ERROR_CHECK(uart_driver_install(uart_port_, bufferSize * 2, 0, 0, NULL, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config(uart_port_, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_port_, potatoPinTx, potatoPinRx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_set_pin(uart_port_, CONFIG_POTATO_PIN_UART_TX, CONFIG_POTATO_PIN_UART_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     
     buffer = (uint8_t *) malloc(bufferSize);
 }

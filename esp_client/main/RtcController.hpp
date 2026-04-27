@@ -80,8 +80,6 @@ class RtcController {
 private:
     static constexpr uint8_t DS3231_RTC_ADDR = 0x68; // I2C address of the RTC  module
     static constexpr i2c_port_num_t I2C_PORT_NUM = I2C_NUM_0; // I2C port number
-    static constexpr gpio_num_t SDA_GPIO = GPIO_NUM_20;
-    static constexpr gpio_num_t SCL_GPIO = GPIO_NUM_19;
     static constexpr uint32_t I2C_SPEED = 100000; 
     
     i2c_master_bus_handle_t m_bus_handle;
