@@ -9,8 +9,8 @@
 static const char *TAG = "UART_IF";
 
 namespace espclient{
-constexpr int potatoPinTx = (17);
-constexpr int potatoPinRx = (18);
+constexpr int potatoPinTx = (10);
+constexpr int potatoPinRx = (11);
 constexpr int bufferSize = 2048;
 constexpr TickType_t kReadTimeoutTicks = pdMS_TO_TICKS(100);
 

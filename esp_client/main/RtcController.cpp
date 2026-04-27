@@ -10,6 +10,7 @@ static const char *TAG = "RTC";
 namespace espclient {
 
 RtcController::RtcController():
+    time_valid(false),
     m_reg_time {
         .reg_addr = 0x00, // Start reading from the seconds register
         .data = {}},
@@ -56,6 +57,9 @@ void RtcController::ReadTime(bool update_rtc) {
 
     if(m_reg_ctrl.data.osf) {
         ESP_LOGW(TAG, "Oscillator stop flag is set. RTC time may be inaccurate.");
+        time_valid = false;
+    } else {
+        time_valid = true; 
     }
 
     ESP_ERROR_CHECK(i2c_master_transmit_receive(

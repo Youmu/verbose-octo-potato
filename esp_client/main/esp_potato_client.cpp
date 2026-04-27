@@ -29,11 +29,14 @@ AtController *pAtController;
 PotatoRequestBuilder *pRequestBuilder;
 RtcController *pRtcController;
 
+uint64_t timer_counter;
+
 extern "C" void InitTaskFunction(void *pvParameters){
     std::mutex mtx;
     std::condition_variable cv;
 
-    if(pTimeSync->SyncTime()) {
+    if(!pRtcController->IsTimeValid() && pTimeSync->SyncTime()) {
+        // If time was not valid but we successfully synced it, update the RTC with the new time
         struct tm time_info;
         time_t now;
         time(&now);
@@ -100,12 +103,18 @@ extern "C" void InitTaskFunction(void *pvParameters){
     pSi->Start();
 
     pAtController->Init();
-
+    timer_counter = 0;
     esp_timer_create_args_t list_msg_timer = {};
-
+    list_msg_timer.arg = &timer_counter;
     list_msg_timer.callback = [](void* p){
-        pRtcController->ReadTime();
-        };
+        uint64_t &counter = *reinterpret_cast<uint64_t*>(p);
+        pAtController->ListSms(SmsStatus::REC_UNREAD);
+        counter++;
+        if(counter >= 12 * 60 * 2){
+            counter = 0;
+            pTimeSync->SyncTime();
+        }
+    };
     list_msg_timer.arg = pAtController;
     esp_timer_handle_t nvs_update_timer;
     ESP_ERROR_CHECK(esp_timer_create(&list_msg_timer, &nvs_update_timer));

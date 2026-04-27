@@ -17,7 +17,7 @@ bool time_sync::SyncTime() {
     time_t now = 0;
     struct tm timeinfo = { };
     int retry = 0;
-    const int retry_count = 10;
+    const int retry_count = 20;
 
     time(&now);
     localtime_r(&now, &timeinfo);

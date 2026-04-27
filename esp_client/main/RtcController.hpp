@@ -86,6 +86,8 @@ private:
     
     i2c_master_bus_handle_t m_bus_handle;
     i2c_master_dev_handle_t m_dev_handle;
+
+    bool time_valid = false; // Flag to indicate if the time read from RTC is valid
 #pragma pack(push, 1)
     struct {
         uint8_t reg_addr;
@@ -107,6 +109,7 @@ public:
 
     void ReadTime(bool update_rtc = false);
     void SetTime(int year, int month, int date, int hours, int minutes, int seconds, int day_of_week);
+    bool IsTimeValid() const { return time_valid; }
 };
 
 }  // namespace espclient
